@@ -32,6 +32,10 @@ The SDK should keep flag evaluation inside the application process. Applications
 
 The FlagStack service will primarily provide initial configuration and subsequent updates, allowing applications to continue evaluating known flags if connectivity is temporarily lost.
 
+## Contributing
+
+Organisation-wide contribution guidelines are maintained in [`flagstack/.github`](https://github.com/flagstack/.github). FlagStack uses a linear Git history and integrates pull requests by rebase only.
+
 ## Related repositories
 
 - [FlagStack](https://github.com/flagstack/flagstack)
@@ -39,6 +43,6 @@ The FlagStack service will primarily provide initial configuration and subsequen
 - [JavaScript / TypeScript SDK](https://github.com/flagstack/sdk-js)
 - [.NET SDK](https://github.com/flagstack/sdk-dotnet)
 
-## License
+## Licence
 
-A license will be selected before the first public release.
+This SDK is licensed under the **Apache License 2.0**. See [`LICENSE`](LICENSE).
