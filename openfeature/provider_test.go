@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	flagstack "github.com/flagstack/sdk-go"
+	switchonyourcode "github.com/switchonyourcode/sdk-go"
 	of "github.com/open-feature/go-sdk/openfeature"
 )
 
@@ -23,7 +23,7 @@ func (s *configServerState) handler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if r.Header.Get("Authorization") != "Bearer fs_server_test" {
+	if r.Header.Get("Authorization") != "Bearer syoc_server_test" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -59,7 +59,7 @@ func newTestProvider(t *testing.T) (*Provider, *configServerState, *httptest.Ser
 	t.Helper()
 	state := &configServerState{version: 1}
 	server := httptest.NewServer(http.HandlerFunc(state.handler))
-	provider, err := NewProvider(ProviderOptions{Client: flagstack.ClientOptions{BaseURL: server.URL, ServerKey: "fs_server_test"}})
+	provider, err := NewProvider(ProviderOptions{Client: switchonyourcode.ClientOptions{BaseURL: server.URL, ServerKey: "syoc_server_test"}})
 	if err != nil {
 		server.Close()
 		t.Fatal(err)
@@ -79,7 +79,7 @@ func TestProviderImplementsOpenFeatureEvaluation(t *testing.T) {
 	if !boolean.Value || boolean.Reason != of.StaticReason || boolean.Variant != "on" {
 		t.Fatalf("unexpected boolean result: %+v", boolean)
 	}
-	if boolean.FlagMetadata["flagstack.environment"] != "production" || boolean.FlagMetadata["flagstack.flag_id"] != "flag-bool" {
+	if boolean.FlagMetadata["switchonyourcode.environment"] != "production" || boolean.FlagMetadata["switchonyourcode.flag_id"] != "flag-bool" {
 		t.Fatalf("unexpected metadata: %#v", boolean.FlagMetadata)
 	}
 
@@ -104,7 +104,7 @@ func TestProviderWorksThroughOpenFeatureClient(t *testing.T) {
 	defer server.Close()
 	defer of.Shutdown()
 
-	const domain = "flagstack-test"
+	const domain = "switchonyourcode-test"
 	if err := of.SetNamedProviderAndWait(domain, provider); err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func TestProviderWorksThroughOpenFeatureClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !value {
-		t.Fatal("expected FlagStack boolean through OpenFeature client")
+		t.Fatal("expected SwitchOnYourCode boolean through OpenFeature client")
 	}
 }
 

@@ -1,4 +1,4 @@
-package flagstack
+package switchonyourcode
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func TestClientRefreshETagAndTypedEvaluation(t *testing.T) {
 			http.NotFound(w, r)
 			return
 		}
-		if r.Header.Get("Authorization") != "Bearer fs_server_test" {
+		if r.Header.Get("Authorization") != "Bearer syoc_server_test" {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -43,7 +43,7 @@ func TestClientRefreshETagAndTypedEvaluation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, err := NewClientAndWait(context.Background(), ClientOptions{BaseURL: server.URL, ServerKey: "fs_server_test"})
+	client, err := NewClientAndWait(context.Background(), ClientOptions{BaseURL: server.URL, ServerKey: "syoc_server_test"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func TestClientRetainsLastKnownGoodConfiguration(t *testing.T) {
 		_, _ = w.Write([]byte(validConfigurationJSON(true)))
 	}))
 	defer server.Close()
-	client, err := NewClientAndWait(context.Background(), ClientOptions{BaseURL: server.URL, ServerKey: "fs_server_test"})
+	client, err := NewClientAndWait(context.Background(), ClientOptions{BaseURL: server.URL, ServerKey: "syoc_server_test"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestClientAuthenticationError(t *testing.T) {
 		w.WriteHeader(http.StatusUnauthorized)
 	}))
 	defer server.Close()
-	client, err := NewClient(ClientOptions{BaseURL: server.URL, ServerKey: "fs_server_test"})
+	client, err := NewClient(ClientOptions{BaseURL: server.URL, ServerKey: "syoc_server_test"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestClientAuthenticationError(t *testing.T) {
 }
 
 func TestClientTypedFallbackErrors(t *testing.T) {
-	client, err := NewClient(ClientOptions{BaseURL: "https://flags.example.com", ServerKey: "fs_server_test"})
+	client, err := NewClient(ClientOptions{BaseURL: "https://flags.example.com", ServerKey: "syoc_server_test"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestPollingCanStartAndStop(t *testing.T) {
 		_, _ = w.Write([]byte(validConfigurationJSON(true)))
 	}))
 	defer server.Close()
-	client, err := NewClientAndWait(context.Background(), ClientOptions{BaseURL: server.URL, ServerKey: "fs_server_test", PollInterval: 5 * time.Millisecond})
+	client, err := NewClientAndWait(context.Background(), ClientOptions{BaseURL: server.URL, ServerKey: "syoc_server_test", PollInterval: 5 * time.Millisecond})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestClientSubscriptionReceivesModifiedConfiguration(t *testing.T) {
 		_, _ = w.Write([]byte(validConfigurationJSON(true)))
 	}))
 	defer server.Close()
-	client, err := NewClient(ClientOptions{BaseURL: server.URL, ServerKey: "fs_server_test"})
+	client, err := NewClient(ClientOptions{BaseURL: server.URL, ServerKey: "syoc_server_test"})
 	if err != nil {
 		t.Fatal(err)
 	}
