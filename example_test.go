@@ -1,23 +1,23 @@
-package flagstack_test
+package switchonyourcode_test
 
 import (
 	"context"
 	"log"
 
-	flagstack "github.com/flagstack/sdk-go"
+	switchonyourcode "github.com/switchonyourcode/sdk-go"
 )
 
 func ExampleNewClientAndWait() {
-	flags, err := flagstack.NewClientAndWait(context.Background(), flagstack.ClientOptions{
+	flags, err := switchonyourcode.NewClientAndWait(context.Background(), switchonyourcode.ClientOptions{
 		BaseURL:   "https://flags.example.com",
-		ServerKey: "fs_server_...",
+		ServerKey: "syoc_server_...",
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer flags.Close()
 
-	enabled := flags.Boolean("new-checkout", false, flagstack.EvaluationContext{
+	enabled := flags.Boolean("new-checkout", false, switchonyourcode.EvaluationContext{
 		TargetingKey: "user-123",
 		Attributes: map[string]any{
 			"plan":    "enterprise",
@@ -28,9 +28,9 @@ func ExampleNewClientAndWait() {
 }
 
 func ExampleClient_StartPolling() {
-	flags, err := flagstack.NewClientAndWait(context.Background(), flagstack.ClientOptions{
+	flags, err := switchonyourcode.NewClientAndWait(context.Background(), switchonyourcode.ClientOptions{
 		BaseURL:      "https://flags.example.com",
-		ServerKey:    "fs_server_...",
+		ServerKey:    "syoc_server_...",
 		PollInterval: 0, // zero uses the default 30-second interval
 	})
 	if err != nil {

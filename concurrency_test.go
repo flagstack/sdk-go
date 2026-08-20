@@ -1,4 +1,4 @@
-package flagstack
+package switchonyourcode
 
 import (
 	"context"
@@ -37,7 +37,7 @@ func TestClientConcurrentRefreshEvaluationAndSubscriptions(t *testing.T) {
 
 	client, err := NewClientAndWait(context.Background(), ClientOptions{
 		BaseURL:   server.URL,
-		ServerKey: "fs_server_test",
+		ServerKey: "syoc_server_test",
 	})
 	if err != nil {
 		t.Fatal(err)

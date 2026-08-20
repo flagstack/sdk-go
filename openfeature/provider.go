@@ -8,19 +8,19 @@ import (
 	"sync/atomic"
 	"time"
 
-	flagstack "github.com/flagstack/sdk-go"
+	switchonyourcode "github.com/switchonyourcode/sdk-go"
 	of "github.com/open-feature/go-sdk/openfeature"
 )
 
-const providerName = "FlagStack"
+const providerName = "Switch On Your Code"
 
 type ProviderOptions struct {
-	Client   flagstack.ClientOptions
+	Client   switchonyourcode.ClientOptions
 	AutoPoll bool
 }
 
 type Provider struct {
-	client      *flagstack.Client
+	client      *switchonyourcode.Client
 	autoPoll    bool
 	events      chan of.Event
 	initialized atomic.Bool
@@ -36,7 +36,7 @@ var (
 )
 
 func NewProvider(options ProviderOptions) (*Provider, error) {
-	client, err := flagstack.NewClient(options.Client)
+	client, err := switchonyourcode.NewClient(options.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func NewProvider(options ProviderOptions) (*Provider, error) {
 	return provider, nil
 }
 
-func (p *Provider) Client() *flagstack.Client { return p.client }
+func (p *Provider) Client() *switchonyourcode.Client { return p.client }
 
 func (p *Provider) Metadata() of.Metadata { return of.Metadata{Name: providerName} }
 
@@ -116,7 +116,7 @@ func (p *Provider) IntEvaluation(_ context.Context, flag string, defaultValue in
 		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, raw.Variant, raw.Reason, raw.RuleID, raw.ErrorCode, raw.ErrorMessage)}
 	}
 	if info.Kind != "number" {
-		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", flagstack.ReasonError, "", flagstack.ErrorTypeMismatch, "FlagStack flag is not a number")}
+		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", switchonyourcode.ReasonError, "", switchonyourcode.ErrorTypeMismatch, "SwitchOnYourCode flag is not a number")}
 	}
 	raw := p.client.RawDetails(flag, evaluationContext(flatCtx))
 	if raw.ErrorCode != "" {
@@ -124,7 +124,7 @@ func (p *Provider) IntEvaluation(_ context.Context, flag string, defaultValue in
 	}
 	rational, ok := new(big.Rat).SetString(string(raw.Value))
 	if !ok || !rational.IsInt() || !rational.Num().IsInt64() {
-		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", flagstack.ReasonError, raw.RuleID, flagstack.ErrorTypeMismatch, "FlagStack number is not an exact OpenFeature int64 value")}
+		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", switchonyourcode.ReasonError, raw.RuleID, switchonyourcode.ErrorTypeMismatch, "SwitchOnYourCode number is not an exact OpenFeature int64 value")}
 	}
 	return of.IntResolutionDetail{Value: rational.Num().Int64(), ProviderResolutionDetail: p.resolutionDetail(flag, raw.Variant, raw.Reason, raw.RuleID, "", "")}
 }
@@ -136,22 +136,22 @@ func (p *Provider) ObjectEvaluation(_ context.Context, flag string, defaultValue
 	}
 	value, ok := normalizeObject(details.Value)
 	if !ok {
-		return of.InterfaceResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", flagstack.ReasonError, details.RuleID, flagstack.ErrorTypeMismatch, "FlagStack JSON value is not an OpenFeature object or array")}
+		return of.InterfaceResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", switchonyourcode.ReasonError, details.RuleID, switchonyourcode.ErrorTypeMismatch, "SwitchOnYourCode JSON value is not an OpenFeature object or array")}
 	}
 	return of.InterfaceResolutionDetail{Value: value, ProviderResolutionDetail: p.resolutionDetail(flag, details.Variant, details.Reason, details.RuleID, "", "")}
 }
 
-func (p *Provider) resolutionDetail(flag, variant string, reason flagstack.EvaluationReason, ruleID string, errorCode flagstack.EvaluationErrorCode, errorMessage string) of.ProviderResolutionDetail {
+func (p *Provider) resolutionDetail(flag, variant string, reason switchonyourcode.EvaluationReason, ruleID string, errorCode switchonyourcode.EvaluationErrorCode, errorMessage string) of.ProviderResolutionDetail {
 	metadata := of.FlagMetadata{}
 	if info, ok := p.client.FlagInfo(flag); ok {
-		metadata["flagstack.environment"] = info.Environment.Key
-		metadata["flagstack.environment_id"] = info.Environment.ID
-		metadata["flagstack.flag_id"] = info.ID
-		metadata["flagstack.revision"] = info.Revision
-		metadata["flagstack.enabled"] = info.Enabled
+		metadata["switchonyourcode.environment"] = info.Environment.Key
+		metadata["switchonyourcode.environment_id"] = info.Environment.ID
+		metadata["switchonyourcode.flag_id"] = info.ID
+		metadata["switchonyourcode.revision"] = info.Revision
+		metadata["switchonyourcode.enabled"] = info.Enabled
 	}
 	if ruleID != "" {
-		metadata["flagstack.rule_id"] = ruleID
+		metadata["switchonyourcode.rule_id"] = ruleID
 	}
 	return of.ProviderResolutionDetail{
 		Reason:          of.Reason(reason),
@@ -161,28 +161,28 @@ func (p *Provider) resolutionDetail(flag, variant string, reason flagstack.Evalu
 	}
 }
 
-func resolutionError(code flagstack.EvaluationErrorCode, message string) of.ResolutionError {
+func resolutionError(code switchonyourcode.EvaluationErrorCode, message string) of.ResolutionError {
 	switch code {
 	case "":
 		return of.ResolutionError{}
-	case flagstack.ErrorProviderNotReady:
+	case switchonyourcode.ErrorProviderNotReady:
 		return of.NewProviderNotReadyResolutionError(message)
-	case flagstack.ErrorFlagNotFound:
+	case switchonyourcode.ErrorFlagNotFound:
 		return of.NewFlagNotFoundResolutionError(message)
-	case flagstack.ErrorParse:
+	case switchonyourcode.ErrorParse:
 		return of.NewParseErrorResolutionError(message)
-	case flagstack.ErrorTypeMismatch:
+	case switchonyourcode.ErrorTypeMismatch:
 		return of.NewTypeMismatchResolutionError(message)
-	case flagstack.ErrorTargetingKeyMissing:
+	case switchonyourcode.ErrorTargetingKeyMissing:
 		return of.NewTargetingKeyMissingResolutionError(message)
-	case flagstack.ErrorInvalidContext:
+	case switchonyourcode.ErrorInvalidContext:
 		return of.NewInvalidContextResolutionError(message)
 	default:
 		return of.NewGeneralResolutionError(message)
 	}
 }
 
-func evaluationContext(flatCtx of.FlattenedContext) flagstack.EvaluationContext {
+func evaluationContext(flatCtx of.FlattenedContext) switchonyourcode.EvaluationContext {
 	attributes := make(map[string]any, len(flatCtx))
 	targetingKey := ""
 	for key, value := range flatCtx {
@@ -194,7 +194,7 @@ func evaluationContext(flatCtx of.FlattenedContext) flagstack.EvaluationContext 
 		}
 		attributes[key] = normalizeContextValue(value)
 	}
-	return flagstack.EvaluationContext{TargetingKey: targetingKey, Attributes: attributes}
+	return switchonyourcode.EvaluationContext{TargetingKey: targetingKey, Attributes: attributes}
 }
 
 func normalizeContextValue(value any) any {
@@ -269,7 +269,7 @@ func normalizeJSONValue(value any) any {
 	}
 }
 
-func (p *Provider) configurationChanged(configuration flagstack.Configuration) {
+func (p *Provider) configurationChanged(configuration switchonyourcode.Configuration) {
 	if !p.initialized.Load() {
 		return
 	}

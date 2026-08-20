@@ -1,4 +1,4 @@
-module github.com/flagstack/sdk-go
+module github.com/switchonyourcode/sdk-go
 
 go 1.25.0
 
