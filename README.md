@@ -1,22 +1,22 @@
-# FlagStack Go SDK
+# Switch On Your Code Go SDK
 
-Official Go SDK for [FlagStack](https://github.com/flagstack/flagstack).
+Official Go SDK for [Switch On Your Code](https://github.com/switchonyourcode/switchonyourcode).
 
 > **Status:** Early development. The API is being validated before the first production release.
 
-The SDK downloads schema-v1 configuration from FlagStack and evaluates flags locally inside your application. Flag evaluation never requires a network request.
+The SDK downloads schema-v1 configuration from Switch On Your Code and evaluates flags locally inside your application. Flag evaluation never requires a network request.
 
 ## Requirements
 
 - Go 1.25 or later.
-- A FlagStack server SDK key (`fs_server_...`) for the target environment.
+- A Switch On Your Code server SDK key (`syoc_server_...`) for the target environment.
 
 The current minimum Go version matches the OpenFeature Go SDK used by the optional provider package.
 
 ## Install
 
 ```bash
-go get github.com/flagstack/sdk-go
+go get github.com/switchonyourcode/sdk-go
 ```
 
 ## Native SDK
@@ -30,21 +30,21 @@ import (
     "context"
     "log"
 
-    flagstack "github.com/flagstack/sdk-go"
+    switchonyourcode "github.com/switchonyourcode/sdk-go"
 )
 
 func main() {
     ctx := context.Background()
-    flags, err := flagstack.NewClientAndWait(ctx, flagstack.ClientOptions{
+    flags, err := switchonyourcode.NewClientAndWait(ctx, switchonyourcode.ClientOptions{
         BaseURL:   "https://flags.example.com",
-        ServerKey: "fs_server_...",
+        ServerKey: "syoc_server_...",
     })
     if err != nil {
         log.Fatal(err)
     }
     defer flags.Close()
 
-    enabled := flags.Boolean("new-checkout", false, flagstack.EvaluationContext{
+    enabled := flags.Boolean("new-checkout", false, switchonyourcode.EvaluationContext{
         TargetingKey: "user-123",
         Attributes: map[string]any{
             "plan":    "enterprise",
@@ -60,7 +60,7 @@ func main() {
 
 ### Typed evaluation
 
-The native API provides value and resolution-detail methods for every FlagStack flag type:
+The native API provides value and resolution-detail methods for every Switch On Your Code flag type:
 
 ```go
 enabled := flags.Boolean("new-checkout", false, ctx)
@@ -72,7 +72,7 @@ result := flags.BooleanDetails("new-checkout", false, ctx)
 log.Printf("value=%v variant=%s reason=%s rule=%s", result.Value, result.Variant, result.Reason, result.RuleID)
 ```
 
-Evaluation details retain FlagStack's OpenFeature-aligned reasons and error codes, including `TARGETING_MATCH`, `SPLIT`, `DISABLED`, `FLAG_NOT_FOUND` and `TARGETING_KEY_MISSING`.
+Evaluation details retain Switch On Your Code's OpenFeature-aligned reasons and error codes, including `TARGETING_MATCH`, `SPLIT`, `DISABLED`, `FLAG_NOT_FOUND` and `TARGETING_KEY_MISSING`.
 
 ### Configuration refreshes
 
@@ -94,19 +94,19 @@ Polling is deliberately opt-in so command-line and short-lived processes are not
 Applications can also subscribe to successful configuration changes:
 
 ```go
-unsubscribe := flags.Subscribe(func(configuration flagstack.Configuration) {
-    log.Printf("FlagStack configuration changed for %s", configuration.Environment.Key)
+unsubscribe := flags.Subscribe(func(configuration switchonyourcode.Configuration) {
+    log.Printf("SwitchOnYourCode configuration changed for %s", configuration.Environment.Key)
 })
 defer unsubscribe()
 ```
 
 ### Custom HTTP clients
 
-Pass `ClientOptions.HTTPClient` to control proxying, transports, TLS, tracing or timeouts. When omitted, FlagStack uses an `http.Client` with a 10-second timeout.
+Pass `ClientOptions.HTTPClient` to control proxying, transports, TLS, tracing or timeouts. When omitted, Switch On Your Code uses an `http.Client` with a 10-second timeout.
 
 ## Targeting and rollout
 
-The Go evaluator implements the same schema-v1 semantics as the FlagStack control plane and the JavaScript/Python SDKs:
+The Go evaluator implements the same schema-v1 semantics as the Switch On Your Code control plane and the JavaScript/Python SDKs:
 
 - boolean, string, number and JSON flags;
 - named variants;
@@ -116,7 +116,7 @@ The Go evaluator implements the same schema-v1 semantics as the FlagStack contro
 - deterministic percentage and multivariate rollout;
 - `targetingKey` or custom scalar rollout bucketing;
 - RE2 regular expressions through Go's standard `regexp` package;
-- FlagStack semantic-version comparisons;
+- Switch On Your Code semantic-version comparisons;
 - deterministic SHA-256 bucket assignment across SDK languages.
 
 The compatibility vector:
@@ -125,10 +125,10 @@ The compatibility vector:
 environment = env-1
 flag        = flag-1
 context key = user-123
-bucket      = 22683
+bucket      = 3837
 ```
 
-is tested by the SDK and matches the FlagStack reference evaluator.
+is tested by the SDK and matches the Switch On Your Code reference evaluator.
 
 ## OpenFeature
 
@@ -141,16 +141,16 @@ import (
     "context"
     "log"
 
-    flagstack "github.com/flagstack/sdk-go"
-    flagstackof "github.com/flagstack/sdk-go/openfeature"
+    switchonyourcode "github.com/switchonyourcode/sdk-go"
+    switchonyourcodeof "github.com/switchonyourcode/sdk-go/openfeature"
     of "github.com/open-feature/go-sdk/openfeature"
 )
 
 func main() {
-    provider, err := flagstackof.NewProvider(flagstackof.ProviderOptions{
-        Client: flagstack.ClientOptions{
+    provider, err := switchonyourcodeof.NewProvider(switchonyourcodeof.ProviderOptions{
+        Client: switchonyourcode.ClientOptions{
             BaseURL:   "https://flags.example.com",
-            ServerKey: "fs_server_...",
+            ServerKey: "syoc_server_...",
         },
         AutoPoll: true,
     })
@@ -178,13 +178,13 @@ func main() {
 }
 ```
 
-The provider maps FlagStack variants, reasons and error codes into OpenFeature resolution details, exposes environment/revision/rule metadata, supports context-aware initialisation/shutdown, and emits `PROVIDER_CONFIGURATION_CHANGED` after post-initialisation configuration updates.
+The provider maps Switch On Your Code variants, reasons and error codes into OpenFeature resolution details, exposes environment/revision/rule metadata, supports context-aware initialisation/shutdown, and emits `PROVIDER_CONFIGURATION_CHANGED` after post-initialisation configuration updates.
 
-FlagStack `number` values map to both OpenFeature float and integer evaluation. Integer evaluation only succeeds when the resolved JSON number is exactly representable as an `int64`; it never rounds through `float64`.
+Switch On Your Code `number` values map to both OpenFeature float and integer evaluation. Integer evaluation only succeeds when the resolved JSON number is exactly representable as an `int64`; it never rounds through `float64`.
 
 ## Failure behaviour
 
-FlagStack follows caller-fallback semantics for typed evaluation errors. If the client is not ready, a flag is missing, or its type does not match the requested getter, the supplied fallback value is returned with error metadata in the corresponding `...Details` method.
+Switch On Your Code follows caller-fallback semantics for typed evaluation errors. If the client is not ready, a flag is missing, or its type does not match the requested getter, the supplied fallback value is returned with error metadata in the corresponding `...Details` method.
 
 A configuration response is validated completely before it replaces the current snapshot. Unsupported schema versions, invalid variants/rules, malformed regexes or invalid rollout weights therefore cannot overwrite a previously valid configuration.
 
@@ -201,14 +201,14 @@ CI validates Go 1.25 and 1.26.
 
 ## Contributing
 
-Organisation-wide contribution guidelines are maintained in [`flagstack/.github`](https://github.com/flagstack/.github). FlagStack uses a linear Git history and integrates pull requests by rebase only.
+Organisation-wide contribution guidelines are maintained in [`switchonyourcode/.github`](https://github.com/switchonyourcode/.github). Switch On Your Code uses a linear Git history and integrates pull requests by rebase only.
 
 ## Related repositories
 
-- [FlagStack](https://github.com/flagstack/flagstack)
-- [Python SDK](https://github.com/flagstack/sdk-python)
-- [JavaScript / TypeScript SDK](https://github.com/flagstack/sdk-js)
-- [.NET SDK](https://github.com/flagstack/sdk-dotnet)
+- [Switch On Your Code](https://github.com/switchonyourcode/switchonyourcode)
+- [Python SDK](https://github.com/switchonyourcode/sdk-python)
+- [JavaScript / TypeScript SDK](https://github.com/switchonyourcode/sdk-js)
+- [.NET SDK](https://github.com/switchonyourcode/sdk-dotnet)
 
 ## Licence
 

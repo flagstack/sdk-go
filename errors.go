@@ -1,4 +1,4 @@
-package flagstack
+package switchonyourcode
 
 import "fmt"
 
