@@ -2,35 +2,202 @@
 
 Official Go SDK for [FlagStack](https://github.com/flagstack/flagstack).
 
-> **Status:** Planned / early development. Not yet ready for production use.
+> **Status:** Early development. The API is being validated before the first production release.
 
-## Goals
+The SDK downloads schema-v1 configuration from FlagStack and evaluates flags locally inside your application. Flag evaluation never requires a network request.
 
-The Go SDK will provide an idiomatic, lightweight FlagStack client for Go applications with:
+## Requirements
 
-- local feature-flag evaluation;
-- real-time configuration updates;
-- resilient cached configuration;
-- safe concurrent use;
-- minimal runtime overhead;
-- context-aware APIs where appropriate;
-- OpenFeature integration.
+- Go 1.25 or later.
+- A FlagStack server SDK key (`fs_server_...`) for the target environment.
 
-## Module
+The current minimum Go version matches the OpenFeature Go SDK used by the optional provider package.
 
-The intended Go module path is:
+## Install
 
-```text
-github.com/flagstack/sdk-go
+```bash
+go get github.com/flagstack/sdk-go
 ```
 
-A final public API will be designed before the first release.
+## Native SDK
 
-## Design principles
+Create and initialise a client during application startup:
 
-The SDK should keep flag evaluation inside the application process. Applications should not need to make a network request to FlagStack for every feature evaluation.
+```go
+package main
 
-The FlagStack service will primarily provide initial configuration and subsequent updates, allowing applications to continue evaluating known flags if connectivity is temporarily lost.
+import (
+    "context"
+    "log"
+
+    flagstack "github.com/flagstack/sdk-go"
+)
+
+func main() {
+    ctx := context.Background()
+    flags, err := flagstack.NewClientAndWait(ctx, flagstack.ClientOptions{
+        BaseURL:   "https://flags.example.com",
+        ServerKey: "fs_server_...",
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer flags.Close()
+
+    enabled := flags.Boolean("new-checkout", false, flagstack.EvaluationContext{
+        TargetingKey: "user-123",
+        Attributes: map[string]any{
+            "plan":    "enterprise",
+            "country": "GB",
+        },
+    })
+
+    _ = enabled
+}
+```
+
+`NewClientAndWait` performs the first configuration refresh before returning. `NewClient` is available when application code wants to control initialisation explicitly with `Refresh`.
+
+### Typed evaluation
+
+The native API provides value and resolution-detail methods for every FlagStack flag type:
+
+```go
+enabled := flags.Boolean("new-checkout", false, ctx)
+layout := flags.String("checkout-layout", "control", ctx)
+limit := flags.Number("max-items", 10, ctx)
+config := flags.JSON("checkout-config", map[string]any{}, ctx)
+
+result := flags.BooleanDetails("new-checkout", false, ctx)
+log.Printf("value=%v variant=%s reason=%s rule=%s", result.Value, result.Variant, result.Reason, result.RuleID)
+```
+
+Evaluation details retain FlagStack's OpenFeature-aligned reasons and error codes, including `TARGETING_MATCH`, `SPLIT`, `DISABLED`, `FLAG_NOT_FOUND` and `TARGETING_KEY_MISSING`.
+
+### Configuration refreshes
+
+Configuration refresh is ETag-aware. An unchanged configuration is answered with `304 Not Modified`, while a failed refresh leaves the last known-good configuration available for local evaluation.
+
+Long-running services can opt into polling:
+
+```go
+if err := flags.StartPolling(context.Background()); err != nil {
+    log.Fatal(err)
+}
+defer flags.StopPolling()
+```
+
+The default interval is 30 seconds. Override it with `ClientOptions.PollInterval`.
+
+Polling is deliberately opt-in so command-line and short-lived processes are not kept alive unexpectedly.
+
+Applications can also subscribe to successful configuration changes:
+
+```go
+unsubscribe := flags.Subscribe(func(configuration flagstack.Configuration) {
+    log.Printf("FlagStack configuration changed for %s", configuration.Environment.Key)
+})
+defer unsubscribe()
+```
+
+### Custom HTTP clients
+
+Pass `ClientOptions.HTTPClient` to control proxying, transports, TLS, tracing or timeouts. When omitted, FlagStack uses an `http.Client` with a 10-second timeout.
+
+## Targeting and rollout
+
+The Go evaluator implements the same schema-v1 semantics as the FlagStack control plane and the JavaScript/Python SDKs:
+
+- boolean, string, number and JSON flags;
+- named variants;
+- ordered targeting rules;
+- arbitrary nested evaluation context;
+- reusable/transitive segments;
+- deterministic percentage and multivariate rollout;
+- `targetingKey` or custom scalar rollout bucketing;
+- RE2 regular expressions through Go's standard `regexp` package;
+- FlagStack semantic-version comparisons;
+- deterministic SHA-256 bucket assignment across SDK languages.
+
+The compatibility vector:
+
+```text
+environment = env-1
+flag        = flag-1
+context key = user-123
+bucket      = 22683
+```
+
+is tested by the SDK and matches the FlagStack reference evaluator.
+
+## OpenFeature
+
+The `openfeature` subpackage implements the OpenFeature Go provider API:
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+
+    flagstack "github.com/flagstack/sdk-go"
+    flagstackof "github.com/flagstack/sdk-go/openfeature"
+    of "github.com/open-feature/go-sdk/openfeature"
+)
+
+func main() {
+    provider, err := flagstackof.NewProvider(flagstackof.ProviderOptions{
+        Client: flagstack.ClientOptions{
+            BaseURL:   "https://flags.example.com",
+            ServerKey: "fs_server_...",
+        },
+        AutoPoll: true,
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    if err := of.SetProviderAndWait(provider); err != nil {
+        log.Fatal(err)
+    }
+    defer of.Shutdown()
+
+    client := of.NewDefaultClient()
+    enabled, err := client.BooleanValue(
+        context.Background(),
+        "new-checkout",
+        false,
+        of.NewEvaluationContext("user-123", map[string]any{"plan": "enterprise"}),
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    _ = enabled
+}
+```
+
+The provider maps FlagStack variants, reasons and error codes into OpenFeature resolution details, exposes environment/revision/rule metadata, supports context-aware initialisation/shutdown, and emits `PROVIDER_CONFIGURATION_CHANGED` after post-initialisation configuration updates.
+
+FlagStack `number` values map to both OpenFeature float and integer evaluation. Integer evaluation only succeeds when the resolved JSON number is exactly representable as an `int64`; it never rounds through `float64`.
+
+## Failure behaviour
+
+FlagStack follows caller-fallback semantics for typed evaluation errors. If the client is not ready, a flag is missing, or its type does not match the requested getter, the supplied fallback value is returned with error metadata in the corresponding `...Details` method.
+
+A configuration response is validated completely before it replaces the current snapshot. Unsupported schema versions, invalid variants/rules, malformed regexes or invalid rollout weights therefore cannot overwrite a previously valid configuration.
+
+## Development
+
+```bash
+go mod tidy
+gofmt -w .
+go vet ./...
+go test -race ./...
+```
+
+CI validates Go 1.25 and 1.26.
 
 ## Contributing
 
