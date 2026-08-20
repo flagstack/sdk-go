@@ -344,6 +344,7 @@ func containsValue(actual, expected any) bool {
 			if candidate == expectedString {
 				return true
 			}
+		}
 	case map[string]any:
 		expectedString, ok := expected.(string)
 		if !ok {
