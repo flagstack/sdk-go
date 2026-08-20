@@ -33,7 +33,15 @@ jobs:
       - name: Verify module metadata
         run: |
           go mod tidy
-          git diff --exit-code -- go.mod go.sum
+          status="$(git status --porcelain -- go.mod go.sum)"
+          if [ -n "$status" ]; then
+            printf '%s\n' "$status"
+            git diff -- go.mod go.sum
+            if git ls-files --others --exclude-standard -- go.sum | grep -q .; then
+              git diff --no-index /dev/null go.sum || true
+            fi
+            exit 1
+          fi
 
       - name: Check formatting
         run: test -z "$(gofmt -l .)"
