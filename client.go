@@ -48,11 +48,11 @@ func NewClient(options ClientOptions) (*Client, error) {
 	baseURL := strings.TrimRight(strings.TrimSpace(options.BaseURL), "/")
 	parsed, err := url.Parse(baseURL)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
-		return nil, fmt.Errorf("SwitchOnYourCode base URL must be an absolute http(s) URL")
+		return nil, fmt.Errorf("Switch On Your Code base URL must be an absolute http(s) URL")
 	}
 	serverKey := strings.TrimSpace(options.ServerKey)
 	if !strings.HasPrefix(serverKey, "syoc_server_") {
-		return nil, fmt.Errorf("Go SDK requires a SwitchOnYourCode server key (syoc_server_...)")
+		return nil, fmt.Errorf("Go SDK requires a Switch On Your Code server key (syoc_server_...)")
 	}
 	httpClient := options.HTTPClient
 	if httpClient == nil {
@@ -117,17 +117,17 @@ func (c *Client) Refresh(ctx context.Context) (RefreshResult, error) {
 		return RefreshResult{Modified: false, Configuration: configuration}, nil
 	}
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return RefreshResult{}, &AuthenticationError{Message: fmt.Sprintf("SwitchOnYourCode SDK authentication failed with status %d", resp.StatusCode)}
+		return RefreshResult{}, &AuthenticationError{Message: fmt.Sprintf("Switch On Your Code SDK authentication failed with status %d", resp.StatusCode)}
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return RefreshResult{}, &HTTPError{Message: fmt.Sprintf("SwitchOnYourCode SDK request failed with status %d", resp.StatusCode), StatusCode: resp.StatusCode}
+		return RefreshResult{}, &HTTPError{Message: fmt.Sprintf("Switch On Your Code SDK request failed with status %d", resp.StatusCode), StatusCode: resp.StatusCode}
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxConfigurationBytes+1))
 	if err != nil {
 		return RefreshResult{}, err
 	}
 	if len(body) > maxConfigurationBytes {
-		return RefreshResult{}, &ConfigurationError{Message: "SwitchOnYourCode configuration response exceeds 10 MiB"}
+		return RefreshResult{}, &ConfigurationError{Message: "Switch On Your Code configuration response exceeds 10 MiB"}
 	}
 	configuration, err := DecodeConfiguration(body)
 	if err != nil {
@@ -165,7 +165,7 @@ func (c *Client) StartPolling(ctx context.Context) error {
 	c.mu.Lock()
 	if c.pollCancel != nil {
 		c.mu.Unlock()
-		return fmt.Errorf("SwitchOnYourCode polling is already running")
+		return fmt.Errorf("Switch On Your Code polling is already running")
 	}
 	pollCtx, cancel := context.WithCancel(ctx)
 	c.pollCancel = cancel
@@ -241,7 +241,7 @@ func (c *Client) RawDetails(flagKey string, ctx EvaluationContext) RawEvaluation
 	c.mu.RLock()
 	if c.configuration == nil {
 		c.mu.RUnlock()
-		return RawEvaluationDetails{Variant: "default", Reason: ReasonError, ErrorCode: ErrorProviderNotReady, ErrorMessage: "SwitchOnYourCode client has no configuration"}
+		return RawEvaluationDetails{Variant: "default", Reason: ReasonError, ErrorCode: ErrorProviderNotReady, ErrorMessage: "Switch On Your Code client has no configuration"}
 	}
 	flag, exists := c.flags[flagKey]
 	environmentID := c.configuration.Environment.ID
@@ -340,7 +340,7 @@ func (c *Client) evaluate(flagKey, expectedKind string, ctx EvaluationContext) (
 	c.mu.RLock()
 	if c.configuration == nil {
 		c.mu.RUnlock()
-		return RawEvaluationDetails{Variant: "default", Reason: ReasonError, ErrorCode: ErrorProviderNotReady, ErrorMessage: "SwitchOnYourCode client has no configuration"}, Flag{}, false
+		return RawEvaluationDetails{Variant: "default", Reason: ReasonError, ErrorCode: ErrorProviderNotReady, ErrorMessage: "Switch On Your Code client has no configuration"}, Flag{}, false
 	}
 	flag, exists := c.flags[flagKey]
 	environmentID := c.configuration.Environment.ID

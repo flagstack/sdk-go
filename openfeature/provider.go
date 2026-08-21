@@ -116,7 +116,7 @@ func (p *Provider) IntEvaluation(_ context.Context, flag string, defaultValue in
 		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, raw.Variant, raw.Reason, raw.RuleID, raw.ErrorCode, raw.ErrorMessage)}
 	}
 	if info.Kind != "number" {
-		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", switchonyourcode.ReasonError, "", switchonyourcode.ErrorTypeMismatch, "SwitchOnYourCode flag is not a number")}
+		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", switchonyourcode.ReasonError, "", switchonyourcode.ErrorTypeMismatch, "Switch On Your Code flag is not a number")}
 	}
 	raw := p.client.RawDetails(flag, evaluationContext(flatCtx))
 	if raw.ErrorCode != "" {
@@ -124,7 +124,7 @@ func (p *Provider) IntEvaluation(_ context.Context, flag string, defaultValue in
 	}
 	rational, ok := new(big.Rat).SetString(string(raw.Value))
 	if !ok || !rational.IsInt() || !rational.Num().IsInt64() {
-		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", switchonyourcode.ReasonError, raw.RuleID, switchonyourcode.ErrorTypeMismatch, "SwitchOnYourCode number is not an exact OpenFeature int64 value")}
+		return of.IntResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", switchonyourcode.ReasonError, raw.RuleID, switchonyourcode.ErrorTypeMismatch, "Switch On Your Code number is not an exact OpenFeature int64 value")}
 	}
 	return of.IntResolutionDetail{Value: rational.Num().Int64(), ProviderResolutionDetail: p.resolutionDetail(flag, raw.Variant, raw.Reason, raw.RuleID, "", "")}
 }
@@ -136,7 +136,7 @@ func (p *Provider) ObjectEvaluation(_ context.Context, flag string, defaultValue
 	}
 	value, ok := normalizeObject(details.Value)
 	if !ok {
-		return of.InterfaceResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", switchonyourcode.ReasonError, details.RuleID, switchonyourcode.ErrorTypeMismatch, "SwitchOnYourCode JSON value is not an OpenFeature object or array")}
+		return of.InterfaceResolutionDetail{Value: defaultValue, ProviderResolutionDetail: p.resolutionDetail(flag, "default", switchonyourcode.ReasonError, details.RuleID, switchonyourcode.ErrorTypeMismatch, "Switch On Your Code JSON value is not an OpenFeature object or array")}
 	}
 	return of.InterfaceResolutionDetail{Value: value, ProviderResolutionDetail: p.resolutionDetail(flag, details.Variant, details.Reason, details.RuleID, "", "")}
 }
