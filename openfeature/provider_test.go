@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	switchonyourcode "github.com/switchonyourcode/sdk-go"
 	of "github.com/open-feature/go-sdk/openfeature"
+	switchonyourcode "github.com/switchonyourcode/sdk-go"
 )
 
 type configServerState struct {
