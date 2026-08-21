@@ -119,7 +119,7 @@ func TestProviderWorksThroughOpenFeatureClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !value {
-		t.Fatal("expected SwitchOnYourCode boolean through OpenFeature client")
+		t.Fatal("expected Switch On Your Code boolean through OpenFeature client")
 	}
 }
 

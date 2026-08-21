@@ -95,7 +95,7 @@ Applications can also subscribe to successful configuration changes:
 
 ```go
 unsubscribe := flags.Subscribe(func(configuration switchonyourcode.Configuration) {
-    log.Printf("SwitchOnYourCode configuration changed for %s", configuration.Environment.Key)
+    log.Printf("Switch On Your Code configuration changed for %s", configuration.Environment.Key)
 })
 defer unsubscribe()
 ```
